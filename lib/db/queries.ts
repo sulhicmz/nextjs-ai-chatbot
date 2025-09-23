@@ -39,14 +39,25 @@ import { LanguageModelV2Usage } from '@ai-sdk/provider';
 // use the Drizzle adapter for Auth.js / NextAuth
 // https://authjs.dev/reference/adapter/drizzle
 
+// Check if POSTGRES_URL is set
+if (!process.env.POSTGRES_URL) {
+  console.warn('POSTGRES_URL is not set. Database features may not work properly.');
+} else {
+  console.log('POSTGRES_URL is set');
+}
+
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
 export async function getUser(email: string): Promise<Array<User>> {
   try {
-    return await db.select().from(user).where(eq(user.email, email));
+    console.log('Getting user by email:', email);
+    const result = await db.select().from(user).where(eq(user.email, email));
+    console.log('User query result:', result.length > 0 ? 'Found' : 'Not found');
+    return result;
   } catch (error) {
+    console.error('Error getting user by email:', error);
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get user by email',

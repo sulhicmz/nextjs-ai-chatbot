@@ -41,24 +41,31 @@ export const {
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
+        console.log('Authenticating user:', email);
         const users = await getUser(email);
+        console.log('Users found:', users.length);
 
         if (users.length === 0) {
+          console.log('User not found, comparing with dummy password');
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
 
         const [user] = users;
+        console.log('User found:', user.id);
 
         if (!user.password) {
+          console.log('User has no password, comparing with dummy password');
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
 
         const passwordsMatch = await compare(password, user.password);
+        console.log('Password match:', passwordsMatch);
 
         if (!passwordsMatch) return null;
 
+        console.log('Authentication successful for user:', user.id);
         return { ...user, type: 'regular' };
       },
     }),
@@ -66,13 +73,16 @@ export const {
       id: 'guest',
       credentials: {},
       async authorize() {
+        console.log('Creating guest user');
         const [guestUser] = await createGuestUser();
+        console.log('Guest user created:', guestUser.id);
         return { ...guestUser, type: 'guest' };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT callback - token:', token ? 'Exists' : 'Missing', 'user:', user ? 'Exists' : 'Missing');
       if (user) {
         token.id = user.id as string;
         token.type = user.type;
@@ -81,6 +91,7 @@ export const {
       return token;
     },
     async session({ session, token }) {
+      console.log('Session callback - session:', session ? 'Exists' : 'Missing', 'token:', token ? 'Exists' : 'Missing');
       if (session.user) {
         session.user.id = token.id;
         session.user.type = token.type;

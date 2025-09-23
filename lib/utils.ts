@@ -31,19 +31,88 @@ export async function fetchWithErrorHandlers(
   init?: RequestInit,
 ) {
   try {
-    const response = await fetch(input, init);
+    console.log('Making fetch request to:', input);
+    
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    const response = await fetch(input, {
+      ...init,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    console.log('Fetch response status:', response.status);
 
     if (!response.ok) {
-      const { code, cause } = await response.json();
-      throw new ChatSDKError(code as ErrorCode, cause);
+      // Try to parse the error response
+      let errorData;
+      try {
+        errorData = await response.json();
+        console.log('Error response data:', errorData);
+      } catch (e) {
+        // If we can't parse JSON, use text
+        errorData = { message: await response.text() };
+        console.log('Error response text:', errorData.message);
+      }
+      
+      // Check if this is an AI Gateway authentication error
+      if (response.status === 401) {
+        console.error('AI Gateway authentication failed');
+        throw new ChatSDKError('unauthorized:chat', 'AI Gateway authentication failed. Please check your API key.');
+      }
+      
+      // Check if this is a rate limit error
+      if (response.status === 429) {
+        console.error('Rate limit exceeded');
+        throw new ChatSDKError('rate_limit:chat', 'Rate limit exceeded. Please try again later.');
+      }
+      
+      // Pass through any ChatSDKError codes from the server
+      if (errorData.code && errorData.message) {
+        console.error('Server error with code:', errorData.code);
+        throw new ChatSDKError(errorData.code as ErrorCode, errorData.message);
+      }
+      
+      console.error('API request failed with status', response.status);
+      throw new ChatSDKError('offline:chat', `API request failed with status ${response.status}`);
     }
 
     return response;
   } catch (error: unknown) {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new ChatSDKError('offline:chat');
+    // Clear any existing timeout
+    if (typeof clearTimeout !== 'undefined' && arguments[1]?.timeoutId) {
+      clearTimeout(arguments[1].timeoutId);
+    }
+    
+    // Check for network connectivity issues
+    if (typeof navigator !== 'undefined') {
+      if (!navigator.onLine) {
+        console.error('No internet connection detected');
+        throw new ChatSDKError('offline:chat', 'No internet connection detected.');
+      }
+      
+      // Additional check for network errors
+      if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+        console.error('Failed to connect to the server:', error.message);
+        throw new ChatSDKError('offline:chat', 'Failed to connect to the server. Please check your internet connection.');
+      }
     }
 
+    // Re-throw ChatSDKErrors as they are already properly formatted
+    if (error instanceof ChatSDKError) {
+      console.error('ChatSDKError:', error.message);
+      throw error;
+    }
+
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Request timed out');
+      throw new ChatSDKError('offline:chat', 'Request timed out. Please check your internet connection.');
+    }
+
+    console.error('Unhandled fetch error:', error);
     throw error;
   }
 }

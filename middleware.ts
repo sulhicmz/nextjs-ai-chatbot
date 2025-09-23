@@ -4,6 +4,7 @@ import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log('Middleware called for path:', pathname);
 
   /*
    * Playwright starts the dev server and requires a 200 status to
@@ -14,6 +15,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/auth')) {
+    console.log('Skipping auth for auth API routes');
     return NextResponse.next();
   }
 
@@ -22,8 +24,10 @@ export async function middleware(request: NextRequest) {
     secret: process.env.AUTH_SECRET,
     secureCookie: !isDevelopmentEnvironment,
   });
+  console.log('Token from middleware:', token ? 'Exists' : 'Missing');
 
   if (!token) {
+    console.log('No token found, redirecting to guest auth');
     const redirectUrl = encodeURIComponent(request.url);
 
     return NextResponse.redirect(
@@ -32,11 +36,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const isGuest = guestRegex.test(token?.email ?? '');
+  console.log('Is guest user:', isGuest);
 
   if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+    console.log('Authenticated user accessing login/register, redirecting to home');
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  console.log('Allowing request to proceed');
   return NextResponse.next();
 }
 
