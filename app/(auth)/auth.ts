@@ -82,7 +82,12 @@ export const {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      console.log('JWT callback - token:', token ? 'Exists' : 'Missing', 'user:', user ? 'Exists' : 'Missing');
+      console.log(
+        'JWT callback - token:',
+        token ? 'Exists' : 'Missing',
+        'user:',
+        user ? 'Exists' : 'Missing',
+      );
       if (user) {
         token.id = user.id as string;
         token.type = user.type;
@@ -91,7 +96,12 @@ export const {
       return token;
     },
     async session({ session, token }) {
-      console.log('Session callback - session:', session ? 'Exists' : 'Missing', 'token:', token ? 'Exists' : 'Missing');
+      console.log(
+        'Session callback - session:',
+        session ? 'Exists' : 'Missing',
+        'token:',
+        token ? 'Exists' : 'Missing',
+      );
       if (session.user) {
         session.user.id = token.id;
         session.user.type = token.type;

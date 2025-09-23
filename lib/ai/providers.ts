@@ -31,7 +31,9 @@ export const myProvider = isTestEnvironment
       console.log('Using AI Gateway with xAI models');
       // Check if AI_GATEWAY_API_KEY is set
       if (!process.env.AI_GATEWAY_API_KEY) {
-        console.warn('AI_GATEWAY_API_KEY is not set. AI features may not work properly.');
+        console.warn(
+          'AI_GATEWAY_API_KEY is not set. AI features may not work properly.',
+        );
       } else {
         console.log('AI_GATEWAY_API_KEY is set');
       }

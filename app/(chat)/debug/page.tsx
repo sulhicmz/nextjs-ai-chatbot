@@ -37,7 +37,12 @@ export default function DebugPage() {
             <h2 className="text-xl font-semibold">Environment Variables:</h2>
             <ul className="list-disc pl-5 mt-2">
               {Object.entries(envStatus.environment).map(([key, value]) => (
-                <li key={key} className={value === 'MISSING' ? 'text-red-500' : 'text-green-500'}>
+                <li
+                  key={key}
+                  className={
+                    value === 'MISSING' ? 'text-red-500' : 'text-green-500'
+                  }
+                >
                   {key}: {value as string}
                 </li>
               ))}

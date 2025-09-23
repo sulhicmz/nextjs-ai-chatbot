@@ -8,13 +8,12 @@ import { Textarea } from './textarea';
 import { useEnterSubmit } from '@/hooks/use-enter-submit';
 import { SendIcon } from './icons';
 import type { Attachment, ChatMessage } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { VisibilitySelector } from './visibility-selector';
 import type { VisibilityType } from './visibility-selector';
 import { toast } from './toast';
-import { ArrowUpIcon, RotateCwIcon } from 'lucide-react';
-import { type LanguageModelUsage } from 'ai';
+import { RotateCwIcon } from 'lucide-react';
+import type { LanguageModelUsage } from 'ai';
 import type { ChatModel } from '@/lib/ai/models';
 
 interface MultimodalInputProps {
@@ -97,17 +96,20 @@ export function MultimodalInput({
         type: 'error',
         description: 'Retrying your message...',
       });
-      
+
       // Remove the failed assistant message if it exists
       const updatedMessages = [...messages];
-      if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === 'assistant') {
+      if (
+        updatedMessages.length > 0 &&
+        updatedMessages[updatedMessages.length - 1].role === 'assistant'
+      ) {
         updatedMessages.pop();
         setMessages(updatedMessages);
       }
-      
+
       // Resend the last user message
       sendMessage(lastMessage);
-      
+
       setTimeout(() => setIsRetrying(false), 2000);
     }
   };
@@ -192,7 +194,7 @@ export function MultimodalInput({
             disabled={isRetrying || status === 'in_progress'}
             className="text-xs"
           >
-            <RotateCwIcon className="w-3 h-3 mr-1" />
+            <RotateCwIcon className="size-3 mr-1" />
             Retry Last Message
           </Button>
         )}

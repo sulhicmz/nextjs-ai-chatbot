@@ -5,6 +5,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+    environment:
+      process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
   });
 }

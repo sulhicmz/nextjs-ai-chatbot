@@ -6,7 +6,10 @@ const isVercel = process.env.VERCEL === '1';
 console.log('Running on Vercel:', isVercel);
 
 // Check key environment variables
-console.log('AI_GATEWAY_API_KEY:', process.env.AI_GATEWAY_API_KEY ? 'SET' : 'NOT SET');
+console.log(
+  'AI_GATEWAY_API_KEY:',
+  process.env.AI_GATEWAY_API_KEY ? 'SET' : 'NOT SET',
+);
 console.log('POSTGRES_URL:', process.env.POSTGRES_URL ? 'SET' : 'NOT SET');
 console.log('AUTH_SECRET:', process.env.AUTH_SECRET ? 'SET' : 'NOT SET');
 

@@ -17,8 +17,8 @@ import {
   getMessagesByChatId,
   saveChat,
   saveMessages,
+  updateChatLastContextById,
 } from '@/lib/db/queries';
-import { updateChatLastContextById } from '@/lib/db/queries';
 import { convertToUIMessages, generateUUID } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
@@ -66,7 +66,7 @@ export function getStreamContext() {
 
 export async function POST(request: Request) {
   console.log('Chat API route called');
-  
+
   let requestBody: PostRequestBody;
 
   try {
@@ -91,7 +91,11 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
-    console.log('Processing chat request:', { id, selectedChatModel, selectedVisibilityType });
+    console.log('Processing chat request:', {
+      id,
+      selectedChatModel,
+      selectedVisibilityType,
+    });
 
     const session = await auth();
     console.log('Auth session:', session ? 'Present' : 'Missing');
@@ -172,13 +176,17 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       execute: ({ writer: dataStream }) => {
         // Check if we're in a test environment or missing API key
-        const isTestEnv = process.env.PLAYWRIGHT_TEST_BASE_URL || 
-                          process.env.PLAYWRIGHT || 
-                          process.env.CI_PLAYWRIGHT;
-        
+        const isTestEnv =
+          process.env.PLAYWRIGHT_TEST_BASE_URL ||
+          process.env.PLAYWRIGHT ||
+          process.env.CI_PLAYWRIGHT;
+
         if (!isTestEnv && !process.env.AI_GATEWAY_API_KEY) {
           console.error('AI_GATEWAY_API_KEY is missing');
-          throw new ChatSDKError('unauthorized:chat', 'AI Gateway API key is missing');
+          throw new ChatSDKError(
+            'unauthorized:chat',
+            'AI Gateway API key is missing',
+          );
         }
 
         console.log('Streaming text with model:', selectedChatModel);
@@ -273,7 +281,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('Unhandled error in chat API:', error);
-    
+
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
@@ -286,20 +294,29 @@ export async function POST(request: Request) {
     // Handle AI provider errors
     if (error instanceof Error) {
       // Check for AI Gateway authentication errors
-      if (error.message.includes('Unauthorized') || error.message.includes('401')) {
-        return new ChatSDKError('unauthorized:chat', 'AI Gateway authentication failed. Please check your API key.').toResponse();
+      if (
+        error.message.includes('Unauthorized') ||
+        error.message.includes('401')
+      ) {
+        return new ChatSDKError(
+          'unauthorized:chat',
+          'AI Gateway authentication failed. Please check your API key.',
+        ).toResponse();
       }
-      
+
       // Check for AI Gateway connection errors
-      if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+      if (
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ENOTFOUND')
+      ) {
         return new ChatSDKError('offline:chat').toResponse();
       }
-      
+
       // Check for rate limiting
       if (error.message.includes('429')) {
         return new ChatSDKError('rate_limit:chat').toResponse();
       }
-      
+
       // Handle generic errors with more specific messaging
       return new ChatSDKError('offline:chat', error.message).toResponse();
     }

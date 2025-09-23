@@ -96,7 +96,7 @@ export function Chat({
       if (error instanceof ChatSDKError) {
         // Provide more specific error messages based on error type
         let message = error.message;
-        
+
         // Add retry option for network errors
         if (error.type === 'offline') {
           message += ' Retrying in 5 seconds...';
@@ -104,7 +104,7 @@ export function Chat({
             type: 'error',
             description: message,
           });
-          
+
           // Auto-retry after 5 seconds
           setTimeout(() => {
             // Show retry message
@@ -112,7 +112,7 @@ export function Chat({
               type: 'error',
               description: 'Retrying now...',
             });
-            
+
             // Retry the last message if available
             if (messages.length > 0) {
               const lastUserMessage = messages[messages.length - 1];
@@ -124,14 +124,16 @@ export function Chat({
           }, 5000);
         } else if (error.type === 'unauthorized') {
           // Provide specific guidance for authentication issues
-          message += ' Please check your AI Gateway API key in your environment variables.';
+          message +=
+            ' Please check your AI Gateway API key in your environment variables.';
           toast({
             type: 'error',
             description: message,
           });
         } else if (error.type === 'rate_limit') {
           // Provide guidance for rate limiting
-          message += ' Please wait a few minutes before sending another message.';
+          message +=
+            ' Please wait a few minutes before sending another message.';
           toast({
             type: 'error',
             description: message,
@@ -146,7 +148,8 @@ export function Chat({
         // Handle unexpected errors
         toast({
           type: 'error',
-          description: "We're having trouble sending your message. Please check your internet connection and try again.",
+          description:
+            "We're having trouble sending your message. Please check your internet connection and try again.",
         });
       }
     },

@@ -39,7 +39,9 @@ export async function middleware(request: NextRequest) {
   console.log('Is guest user:', isGuest);
 
   if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
-    console.log('Authenticated user accessing login/register, redirecting to home');
+    console.log(
+      'Authenticated user accessing login/register, redirecting to home',
+    );
     return NextResponse.redirect(new URL('/', request.url));
   }
 
