@@ -10,6 +10,7 @@ import type { DBMessage, Document } from '@/lib/db/schema';
 import { ChatSDKError, type ErrorCode } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 import { formatISO } from 'date-fns';
+import { debugLog } from './debug';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,7 +32,7 @@ export async function fetchWithErrorHandlers(
   init?: RequestInit,
 ) {
   try {
-    console.log('Making fetch request to:', input);
+    debugLog('Making fetch request to:', input);
 
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
@@ -43,23 +44,23 @@ export async function fetchWithErrorHandlers(
     });
 
     clearTimeout(timeoutId);
-    console.log('Fetch response status:', response.status);
+    debugLog('Fetch response status:', response.status);
 
     if (!response.ok) {
       // Try to parse the error response
       let errorData: any;
       try {
         errorData = await response.json();
-        console.log('Error response data:', errorData);
+        debugLog('Error response data:', errorData);
       } catch (e) {
         // If we can't parse JSON, use text
         errorData = { message: await response.text() };
-        console.log('Error response text:', errorData.message);
+        debugLog('Error response text:', errorData.message);
       }
 
       // Check if this is an AI Gateway authentication error
       if (response.status === 401) {
-        console.error('AI Gateway authentication failed');
+        debugLog('AI Gateway authentication failed');
         throw new ChatSDKError(
           'unauthorized:chat',
           'AI Gateway authentication failed. Please check your API key.',
@@ -68,7 +69,7 @@ export async function fetchWithErrorHandlers(
 
       // Check if this is a rate limit error
       if (response.status === 429) {
-        console.error('Rate limit exceeded');
+        debugLog('Rate limit exceeded');
         throw new ChatSDKError(
           'rate_limit:chat',
           'Rate limit exceeded. Please try again later.',
@@ -77,11 +78,11 @@ export async function fetchWithErrorHandlers(
 
       // Pass through any ChatSDKError codes from the server
       if (errorData.code && errorData.message) {
-        console.error('Server error with code:', errorData.code);
+        debugLog('Server error with code:', errorData.code);
         throw new ChatSDKError(errorData.code as ErrorCode, errorData.message);
       }
 
-      console.error('API request failed with status', response.status);
+      debugLog('API request failed with status', response.status);
       throw new ChatSDKError(
         'offline:chat',
         `API request failed with status ${response.status}`,
@@ -98,7 +99,7 @@ export async function fetchWithErrorHandlers(
     // Check for network connectivity issues
     if (typeof navigator !== 'undefined') {
       if (!navigator.onLine) {
-        console.error('No internet connection detected');
+        debugLog('No internet connection detected');
         throw new ChatSDKError(
           'offline:chat',
           'No internet connection detected.',
@@ -111,7 +112,7 @@ export async function fetchWithErrorHandlers(
         (error.message.includes('fetch') ||
           error.message.includes('Failed to fetch'))
       ) {
-        console.error('Failed to connect to the server:', error.message);
+        debugLog('Failed to connect to the server:', error.message);
         throw new ChatSDKError(
           'offline:chat',
           'Failed to connect to the server. Please check your internet connection.',
@@ -121,20 +122,20 @@ export async function fetchWithErrorHandlers(
 
     // Re-throw ChatSDKErrors as they are already properly formatted
     if (error instanceof ChatSDKError) {
-      console.error('ChatSDKError:', error.message);
+      debugLog('ChatSDKError:', error.message);
       throw error;
     }
 
     // Handle timeout errors
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('Request timed out');
+      debugLog('Request timed out');
       throw new ChatSDKError(
         'offline:chat',
         'Request timed out. Please check your internet connection.',
       );
     }
 
-    console.error('Unhandled fetch error:', error);
+    debugLog('Unhandled fetch error:', error);
     throw error;
   }
 }

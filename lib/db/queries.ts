@@ -34,6 +34,7 @@ import { generateHashedPassword } from './utils';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { ChatSDKError } from '../errors';
 import type { LanguageModelV2Usage } from '@ai-sdk/provider';
+import { debugLog } from '../debug';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -41,11 +42,9 @@ import type { LanguageModelV2Usage } from '@ai-sdk/provider';
 
 // Check if POSTGRES_URL is set
 if (!process.env.POSTGRES_URL) {
-  console.warn(
-    'POSTGRES_URL is not set. Database features may not work properly.',
-  );
+  debugLog('POSTGRES_URL is not set. Database features may not work properly.');
 } else {
-  console.log('POSTGRES_URL is set');
+  debugLog('POSTGRES_URL is set');
 }
 
 // biome-ignore lint: Forbidden non-null assertion.
@@ -54,15 +53,12 @@ const db = drizzle(client);
 
 export async function getUser(email: string): Promise<Array<User>> {
   try {
-    console.log('Getting user by email:', email);
+    debugLog('Getting user by email:', email);
     const result = await db.select().from(user).where(eq(user.email, email));
-    console.log(
-      'User query result:',
-      result.length > 0 ? 'Found' : 'Not found',
-    );
+    debugLog('User query result:', result.length > 0 ? 'Found' : 'Not found');
     return result;
   } catch (error) {
-    console.error('Error getting user by email:', error);
+    debugLog('Error getting user by email:', error);
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get user by email',

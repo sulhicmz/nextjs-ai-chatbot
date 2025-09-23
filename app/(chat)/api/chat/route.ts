@@ -39,6 +39,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
+import { debugLog } from '@/lib/debug';
 
 export const maxDuration = 60;
 
@@ -65,16 +66,16 @@ export function getStreamContext() {
 }
 
 export async function POST(request: Request) {
-  console.log('Chat API route called');
+  debugLog('Chat API route called');
 
   let requestBody: PostRequestBody;
 
   try {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
-    console.log('Request body parsed successfully');
+    debugLog('Request body parsed successfully');
   } catch (error) {
-    console.error('Error parsing request body:', error);
+    debugLog('Error parsing request body:', error);
     return new ChatSDKError('bad_request:api').toResponse();
   }
 
@@ -91,39 +92,39 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
-    console.log('Processing chat request:', {
+    debugLog('Processing chat request:', {
       id,
       selectedChatModel,
       selectedVisibilityType,
     });
 
     const session = await auth();
-    console.log('Auth session:', session ? 'Present' : 'Missing');
+    debugLog('Auth session:', session ? 'Present' : 'Missing');
 
     if (!session?.user) {
-      console.log('User not authenticated');
+      debugLog('User not authenticated');
       return new ChatSDKError('unauthorized:chat').toResponse();
     }
 
     const userType: UserType = session.user.type;
-    console.log('User type:', userType);
+    debugLog('User type:', userType);
 
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,
       differenceInHours: 24,
     });
-    console.log('User message count in last 24 hours:', messageCount);
+    debugLog('User message count in last 24 hours:', messageCount);
 
     if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      console.log('User exceeded message limit');
+      debugLog('User exceeded message limit');
       return new ChatSDKError('rate_limit:chat').toResponse();
     }
 
     const chat = await getChatById({ id });
-    console.log('Chat found:', chat ? 'Yes' : 'No');
+    debugLog('Chat found:', chat ? 'Yes' : 'No');
 
     if (!chat) {
-      console.log('Creating new chat');
+      debugLog('Creating new chat');
       const title = await generateTitleFromUserMessage({
         message,
       });
@@ -136,17 +137,17 @@ export async function POST(request: Request) {
       });
     } else {
       if (chat.userId !== session.user.id) {
-        console.log('User does not own this chat');
+        debugLog('User does not own this chat');
         return new ChatSDKError('forbidden:chat').toResponse();
       }
     }
 
     const messagesFromDb = await getMessagesByChatId({ id });
-    console.log('Messages from database:', messagesFromDb.length);
+    debugLog('Messages from database:', messagesFromDb.length);
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
 
     const { longitude, latitude, city, country } = geolocation(request);
-    console.log('Geolocation data:', { longitude, latitude, city, country });
+    debugLog('Geolocation data:', { longitude, latitude, city, country });
 
     const requestHints: RequestHints = {
       longitude,
@@ -182,14 +183,14 @@ export async function POST(request: Request) {
           process.env.CI_PLAYWRIGHT;
 
         if (!isTestEnv && !process.env.AI_GATEWAY_API_KEY) {
-          console.error('AI_GATEWAY_API_KEY is missing');
+          debugLog('AI_GATEWAY_API_KEY is missing');
           throw new ChatSDKError(
             'unauthorized:chat',
             'AI Gateway API key is missing',
           );
         }
 
-        console.log('Streaming text with model:', selectedChatModel);
+        debugLog('Streaming text with model:', selectedChatModel);
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
@@ -257,7 +258,7 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
-        console.error('Error in stream processing:', error);
+        debugLog('Error in stream processing:', error);
         if (error instanceof ChatSDKError) {
           return error.message;
         }
@@ -280,7 +281,7 @@ export async function POST(request: Request) {
       return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
     }
   } catch (error) {
-    console.error('Unhandled error in chat API:', error);
+    debugLog('Unhandled error in chat API:', error);
 
     if (error instanceof ChatSDKError) {
       return error.toResponse();

@@ -5,13 +5,14 @@ import {
 } from 'ai';
 import { gateway } from '@ai-sdk/gateway';
 import { isTestEnvironment } from '../constants';
+import { debugLog } from '../debug';
 
 // Add logging to see which provider is being used
-console.log('Initializing AI provider. Test environment:', isTestEnvironment);
+debugLog('Initializing AI provider. Test environment:', isTestEnvironment);
 
 export const myProvider = isTestEnvironment
   ? (() => {
-      console.log('Using mock models for testing');
+      debugLog('Using mock models for testing');
       const {
         artifactModel,
         chatModel,
@@ -28,14 +29,14 @@ export const myProvider = isTestEnvironment
       });
     })()
   : (() => {
-      console.log('Using AI Gateway with xAI models');
+      debugLog('Using AI Gateway with xAI models');
       // Check if AI_GATEWAY_API_KEY is set
       if (!process.env.AI_GATEWAY_API_KEY) {
-        console.warn(
+        debugLog(
           'AI_GATEWAY_API_KEY is not set. AI features may not work properly.',
         );
       } else {
-        console.log('AI_GATEWAY_API_KEY is set');
+        debugLog('AI_GATEWAY_API_KEY is set');
       }
       return customProvider({
         languageModels: {

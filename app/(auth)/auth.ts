@@ -5,6 +5,7 @@ import { createGuestUser, getUser } from '@/lib/db/queries';
 import { authConfig } from './auth.config';
 import { DUMMY_PASSWORD } from '@/lib/constants';
 import type { DefaultJWT } from 'next-auth/jwt';
+import { debugLog } from '@/lib/debug';
 
 export type UserType = 'guest' | 'regular';
 
@@ -41,31 +42,31 @@ export const {
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
-        console.log('Authenticating user:', email);
+        debugLog('Authenticating user:', email);
         const users = await getUser(email);
-        console.log('Users found:', users.length);
+        debugLog('Users found:', users.length);
 
         if (users.length === 0) {
-          console.log('User not found, comparing with dummy password');
+          debugLog('User not found, comparing with dummy password');
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
 
         const [user] = users;
-        console.log('User found:', user.id);
+        debugLog('User found:', user.id);
 
         if (!user.password) {
-          console.log('User has no password, comparing with dummy password');
+          debugLog('User has no password, comparing with dummy password');
           await compare(password, DUMMY_PASSWORD);
           return null;
         }
 
         const passwordsMatch = await compare(password, user.password);
-        console.log('Password match:', passwordsMatch);
+        debugLog('Password match:', passwordsMatch);
 
         if (!passwordsMatch) return null;
 
-        console.log('Authentication successful for user:', user.id);
+        debugLog('Authentication successful for user:', user.id);
         return { ...user, type: 'regular' };
       },
     }),
@@ -73,16 +74,16 @@ export const {
       id: 'guest',
       credentials: {},
       async authorize() {
-        console.log('Creating guest user');
+        debugLog('Creating guest user');
         const [guestUser] = await createGuestUser();
-        console.log('Guest user created:', guestUser.id);
+        debugLog('Guest user created:', guestUser.id);
         return { ...guestUser, type: 'guest' };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      console.log(
+      debugLog(
         'JWT callback - token:',
         token ? 'Exists' : 'Missing',
         'user:',
@@ -96,7 +97,7 @@ export const {
       return token;
     },
     async session({ session, token }) {
-      console.log(
+      debugLog(
         'Session callback - session:',
         session ? 'Exists' : 'Missing',
         'token:',
